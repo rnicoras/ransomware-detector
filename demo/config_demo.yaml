@@ -1,0 +1,71 @@
+monitor:
+  watch_paths:
+    - "/tmp/demo_target"
+  recursive: true
+  ignore_patterns:
+    - "*.log"
+
+honeyfiles:
+  enabled: true
+  directory: "/tmp/demo_honeyfiles"
+  count: 5
+  names:
+    - "passwords.docx"
+    - "financial_report_2024.xlsx"
+    - "backup_credentials.txt"
+    - "company_secrets.pdf"
+    - "personal_photos.zip"
+
+analysis:
+  burst:
+    threshold_ops_per_sec: 10   # Lower than default so burst fires easily
+    window_seconds: 5
+  entropy:
+    high_entropy_threshold: 7.0  # Slightly lower than default
+    min_file_size_bytes: 256
+  type_mutation:
+    enabled: true
+    check_magic_bytes: true
+  extension_rename:
+    enabled: true
+    known_bad_extensions:
+      - ".locked"
+      - ".encrypted"
+      - ".enc"
+      - ".wncry"
+
+threat_scoring:
+  weights:
+    honeyfile_touch: 60
+    burst_activity: 20
+    high_entropy: 15
+    type_mutation: 25
+    known_bad_extension: 40
+  thresholds:
+    alert: 20       # Lower so alerts are visible early
+    suspend: 45
+    quarantine: 65
+
+response:
+  auto_suspend: false    # Keep false during demo — we don't want to suspend
+  auto_quarantine: false # your own terminal process accidentally
+  quarantine_dir: "/tmp/demo_quarantine"
+  auto_kill: false
+
+backup:
+  enabled: false   # Not built yet
+
+integrity:
+  db_path: "/tmp/demo_checksums.db"
+  algorithm: "sha256"
+
+dashboard:
+  enabled: false   # Not built yet
+  host: "127.0.0.1"
+  port: 8765
+
+logging:
+  level: "DEBUG"   # Full verbosity for the demo
+  log_dir: "/tmp/demo_logs"
+  max_bytes: 10485760
+  backup_count: 3

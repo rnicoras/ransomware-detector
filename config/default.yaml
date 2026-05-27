@@ -1,0 +1,84 @@
+monitor:
+  watch_paths:
+    - "~/Documents"
+    - "~/Desktop"
+  recursive: true
+  ignore_patterns:
+    - "*.tmp"
+    - "*.log"
+    - ".git/**"
+    - "__pycache__/**"
+
+honeyfiles:
+  enabled: true
+  directory: "~/.ransomware-detector/honeyfiles"
+  count: 5
+  names:
+    - "passwords.docx"
+    - "financial_report_2024.xlsx"
+    - "backup_credentials.txt"
+    - "company_stuff.pdf"
+    - "personal_photos.zip"
+
+analysis:
+  burst:
+    threshold_ops_per_sec: 20
+    window_seconds: 5
+  entropy:
+    high_entropy_threshold: 7.2
+    min_file_size_bytes: 512
+  type_mutation:
+    enabled: true
+    check_magic_bytes: true
+  extension_rename:
+    enabled: true
+    known_bad_extensions:
+      - ".locked"
+      - ".encrypted"
+      - ".enc"
+      - ".crypted"
+      - ".crypt"
+      - ".cry"
+      - ".rnsmwr"
+      - ".wncry"
+      - ".wannacry"
+
+threat_scoring:
+  weights:
+    honeyfile_touch: 60
+    burst_activity: 20
+    high_entropy: 15
+    type_mutation: 25
+    known_bad_extension: 40
+  thresholds:
+    alert: 30
+    suspend: 55
+    quarantine: 75
+
+response:
+  auto_suspend: true
+  auto_quarantine: true
+  quarantine_dir: "~/.ransomware-detector/quarantine"
+  auto_kill: false
+
+backup:
+  enabled: true
+  backup_dir: "~/.ransomware-detector/backups"
+  backup_paths: []
+  max_versions: 5
+  interval_seconds: 300
+
+integrity:
+  db_path: "~/.ransomware-detector/checksums.db"
+  algorithm: "sha256"
+
+dashboard:
+  enabled: true
+  host: "127.0.0.1"
+  port: 8765
+
+logging:
+  level: "INFO"
+  log_dir: "~/.ransomware-detector/logs"
+  max_bytes: 10485760
+  backup_count: 5
