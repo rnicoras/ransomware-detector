@@ -13,9 +13,7 @@ log = logging.getLogger(__name__)
 
 
 def _parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(
-        description="Ransomware Early-Stage Detector & Safe Backup Orchestrator"
-    )
+    parser = argparse.ArgumentParser()
     parser.add_argument("--config", metavar="PATH", default=None)
     parser.add_argument("--watch", metavar="PATH", nargs="+", default=None)
     return parser.parse_args()
@@ -27,7 +25,7 @@ async def _main(args: argparse.Namespace) -> None:
         cfg.monitor.watch_paths = [Path(p).expanduser().resolve() for p in args.watch]
 
     setup_logging(cfg.logging)
-    log.info("Starting ransomware detector")
+    log.info("Starting detector")
     log.info("Watching: %s", [str(p) for p in cfg.monitor.watch_paths])
 
     bus = EventBus()
@@ -39,13 +37,17 @@ async def _main(args: argparse.Namespace) -> None:
     from src.analysis.engine import AnalysisEngine
     from src.analysis.score import ThreatScoringEngine
     from src.response.orchestrator import ResponseOrchestrator
+    from src.backup.orchestrator import Backup
+    from src.dashboard.server import Dashboard
 
-    tasks.append(asyncio.create_task(FileSystemWatcher(cfg, bus).run(), name="fs_watcher"))
-    tasks.append(asyncio.create_task(HoneyfileSentinel(cfg, bus).run(), name="honeyfile"))
-    tasks.append(asyncio.create_task(ProcessInspector(cfg, bus).run(), name="proc_inspector"))
-    tasks.append(asyncio.create_task(AnalysisEngine(cfg, bus).run(), name="analysis"))
-    tasks.append(asyncio.create_task(ThreatScoringEngine(cfg, bus).run(), name="scoring"))
-    tasks.append(asyncio.create_task(ResponseOrchestrator(cfg, bus).run(), name="response"))
+    tasks.append(asyncio.create_task(FileSystemWatcher(cfg, bus).run(), name = "fs_watcher"))
+    tasks.append(asyncio.create_task(HoneyfileSentinel(cfg, bus).run(), name = "honeyfile"))
+    tasks.append(asyncio.create_task(ProcessInspector(cfg, bus).run(), name = "proc_inspector"))
+    tasks.append(asyncio.create_task(AnalysisEngine(cfg, bus).run(), name = "analysis"))
+    tasks.append(asyncio.create_task(ThreatScoringEngine(cfg, bus).run(), name = "scoring"))
+    tasks.append(asyncio.create_task(ResponseOrchestrator(cfg, bus).run(), name = "response"))
+    tasks.append(asyncio.create_task(Backup(cfg, bus).run(), name = "backup"))
+    tasks.append(asyncio.create_task(Dashboard(cfg, bus).run(), name="dashboard"))
 
     stop = asyncio.Event()
 
@@ -60,7 +62,7 @@ async def _main(args: argparse.Namespace) -> None:
         except NotImplementedError:
             signal.signal(sig, _signal_handler)
 
-    log.info("Detector running — press Ctrl+C to stop")
+    log.info("Detector running")
     await stop.wait()
 
     for task in tasks:

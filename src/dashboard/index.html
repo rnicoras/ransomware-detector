@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ransomware Detector</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+
+<div class="header">
+    <div class="header-left">
+        <div class="shield">&#128737;</div>
+        <div>
+            <h1>Detector</h1>
+            <span>Threat monitoring dashboard</span>
+        </div>
+    </div>
+    <div class="status-badge">
+        <div class="dot" id="dot"></div>
+        <span id="statusText">Connecting...</span>
+    </div>
+</div>
+
+<div class="container">
+    <div class="stats-grid">
+        <div class="card c-alert">
+            <div class="label">Total Alerts</div>
+            <div class="val" id="sAlerts">0</div>
+        </div>
+        <div class="card c-suspend">
+            <div class="label">Suspensions</div>
+            <div class="val" id="sSuspend">0</div>
+        </div>
+        <div class="card c-quarantine">
+            <div class="label">Quarantines</div>
+            <div class="val" id="sQuarantine">0</div>
+        </div>
+        <div class="card c-uptime">
+            <div class="label">Uptime</div>
+            <div class="val" id="sUptime">00:00:00</div>
+        </div>
+    </div>
+
+    <div class="events-card">
+        <div class="events-top">
+            <h2>Live Event Feed</h2>
+            <button class="btn-clear" onclick="clearAll()">Clear</button>
+        </div>
+        <div class="table-wrap" id="wrap">
+            <div class="empty" id="empty">
+                <div class="icon">&#128269;</div>
+                <p>Monitoring active. No threats detected yet.</p>
+            </div>
+            <table id="tbl" style="display:none">
+                <thead>
+                    <tr>
+                        <th>Time</th>
+                        <th>Level</th>
+                        <th>Score</th>
+                        <th>File</th>
+                        <th>Signals</th>
+                        <th>PID</th>
+                    </tr>
+                </thead>
+                <tbody id="tbody"></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script src="/static/socket.js"></script>
+</body>
+</html>

@@ -1,0 +1,200 @@
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+    background: #0f172a;
+    color: #e2e8f0;
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    min-height: 100vh;
+}
+
+.header {
+    background: #1e293b;
+    border-bottom: 1px solid #334155;
+    padding: 16px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.header-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.shield {
+    width: 36px;
+    height: 36px;
+    background: #3b82f6;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem;
+}
+
+.header h1 { font-size: 1.1rem; font-weight: 700; color: #f1f5f9; }
+.header span { font-size: 0.72rem; color: #64748b; }
+
+.status-badge {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.8rem;
+    color: #94a3b8;
+}
+
+.dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #ef4444;
+}
+
+.dot.on {
+    background: #22c55e;
+    animation: blink 2s infinite;
+}
+
+@keyframes blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+}
+
+.container {
+    padding: 24px;
+    max-width: 1400px;
+    margin: 0 auto;
+}
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    margin-bottom: 24px;
+}
+
+.card {
+    background: #1e293b;
+    border: 1px solid #334155;
+    border-radius: 12px;
+    padding: 20px;
+}
+
+.card .label {
+    font-size: 0.7rem;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-bottom: 10px;
+}
+
+.card .val { font-size: 2rem; font-weight: 700; color: #f1f5f9; }
+.card.c-alert .val { color: #fbbf24; }
+.card.c-suspend .val { color: #f97316; }
+.card.c-quarantine .val { color: #ef4444; }
+.card.c-uptime .val { font-size: 1.2rem; color: #22c55e; padding-top: 6px; }
+
+.events-card {
+    background: #1e293b;
+    border: 1px solid #334155;
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+.events-top {
+    padding: 14px 20px;
+    border-bottom: 1px solid #334155;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.events-top h2 { font-size: 0.85rem; font-weight: 600; color: #cbd5e1; }
+
+.btn-clear {
+    background: #334155;
+    color: #94a3b8;
+    border: none;
+    padding: 4px 12px;
+    border-radius: 6px;
+    font-size: 0.72rem;
+    cursor: pointer;
+}
+
+.btn-clear:hover { background: #475569; }
+
+.table-wrap { max-height: 580px; overflow-y: auto; }
+.table-wrap::-webkit-scrollbar { width: 4px; }
+.table-wrap::-webkit-scrollbar-track { background: #0f172a; }
+.table-wrap::-webkit-scrollbar-thumb { background: #334155; border-radius: 2px; }
+
+table { width: 100%; border-collapse: collapse; }
+
+thead th {
+    background: #0f172a;
+    padding: 10px 16px;
+    text-align: left;
+    font-size: 0.68rem;
+    font-weight: 600;
+    color: #475569;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    position: sticky;
+    top: 0;
+}
+
+tbody td {
+    padding: 11px 16px;
+    font-size: 0.78rem;
+    border-bottom: 1px solid #0f172a;
+    color: #94a3b8;
+}
+
+tbody tr:hover td { background: #162032; }
+
+.badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 0.67rem;
+    font-weight: 700;
+    text-transform: uppercase;
+}
+
+.b-alert      { background: #fbbf2415; color: #fbbf24; border: 1px solid #fbbf2430; }
+.b-suspend    { background: #f9731615; color: #f97316; border: 1px solid #f9731630; }
+.b-quarantine { background: #ef444415; color: #ef4444; border: 1px solid #ef444430; }
+.b-assess     { background: #3b82f615; color: #3b82f6; border: 1px solid #3b82f630; }
+
+.score-wrap { display: flex; align-items: center; gap: 8px; }
+.score-bar  { width: 52px; height: 4px; background: #334155; border-radius: 2px; overflow: hidden; }
+.score-fill { height: 100%; border-radius: 2px; }
+
+.sig {
+    display: inline-block;
+    background: #0f172a;
+    border: 1px solid #334155;
+    padding: 1px 5px;
+    border-radius: 3px;
+    font-size: 0.62rem;
+    color: #64748b;
+    margin: 1px;
+}
+
+.path-cell {
+    max-width: 180px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: #cbd5e1;
+}
+
+.empty {
+    text-align: center;
+    padding: 60px;
+    color: #334155;
+}
+
+.empty .icon { font-size: 2rem; margin-bottom: 10px; }
+.empty p { font-size: 0.8rem; }
