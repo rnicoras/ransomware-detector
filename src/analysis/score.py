@@ -71,7 +71,22 @@ class ThreatScoringEngine:
             pid=bucket.pid,
         )
 
-        log.info("ThreatAssessment: %s", assessment.summary)
+        # attach process context to the log if we have it
+        if bucket.pid and bucket.pid in self._process_events:
+            proc = self._process_events[bucket.pid]
+            parts = [f"process={proc.name} (pid={proc.pid})"]
+            if proc.read_write_ratio is not None:
+                parts.append(f"rw_ratio={proc.read_write_ratio:.2f}")
+            if proc.cmdline:
+                parts.append(f"cmd={proc.cmdline[:80]}")
+            log.info(
+                "Threat Assessment: %s [%s]", assessment.summary, " | ".join(parts)
+            )
+        else:
+            log.info(
+                "Threat Assessment: %s", assessment.summary
+            )
+
         await self._bus.publish(assessment)
 
     async def _flush_expired(self) -> None:
@@ -89,14 +104,33 @@ class ThreatScoringEngine:
         bucket = self._get_or_create(signal)
         bucket.signals.append(signal)
 
-        log.debug(
-            "Signal %s +%d → running score %d (path=%s pid=%s)",
-            signal.kind.name,
-            signal.score_contribution,
-            bucket.score,
-            signal.path,
-            signal.pid,
-        )
+        # enrich log with process info if we have a matching pid
+        if signal.pid and signal.pid in self._process_events:
+            proc = self._process_events[signal.pid]
+            if bucket.pid is None:
+                bucket.pid = proc.pid
+            ratio_info = (
+                f" ratio={proc.read_write_ratio:.2f}"
+                if proc.read_write_ratio is not None else ""
+            )
+            log.debug(
+                "Signal %s +%d enriched with process %s (pid=%d%s) => running score %d",
+                signal.kind.name,
+                signal.score_contribution,
+                proc.name,
+                proc.pid,
+                ratio_info,
+                bucket.score,
+            )
+        else:
+            log.debug(
+                "Signal %s +%d => running score %d (path=%s pid=%s)",
+                signal.kind.name,
+                signal.score_contribution,
+                bucket.score,
+                signal.path,
+                signal.pid,
+            )
 
         # honeyfile touched = immediate flush
         if signal.kind == SignalKind.HONEYFILE_TOUCHED:
@@ -108,7 +142,7 @@ class ThreatScoringEngine:
         quarantine_threshold = self._cfg.threat_scoring.thresholds.quarantine
         if bucket.score >= quarantine_threshold:
             log.warning(
-                "Score %d reached quarantine threshold %d — flushing immediately",
+                "Score %d reached quarantine threshold %d. Flushing",
                 bucket.score,
                 quarantine_threshold,
             )
@@ -116,13 +150,11 @@ class ThreatScoringEngine:
 
     async def _handle_process_event(self, event: ProcessEvent) -> None:
         self._process_events[event.pid] = event
-        for bucket in self._buckets.values():
-            if bucket.pid == event.pid and bucket.path is None:
-                log.debug("Enriched bucket for pid=%d with process info", event.pid)
-
 
     async def run(self) -> None:
-        log.info("ThreatScoringEngine started")
+        log.info(
+            "Threat scoring engine started"
+        )
 
         flush_task = asyncio.create_task(self._flush_expired(), name="score_flush")
 
@@ -136,13 +168,19 @@ class ThreatScoringEngine:
                 except asyncio.CancelledError:
                     raise
                 except Exception:
-                    log.exception("ThreatScoringEngine error processing event")
+                    log.exception(
+                        "Threat scoring engine error processing event"
+                    )
         except asyncio.CancelledError:
-            log.info("ThreatScoringEngine shutting down")
+            log.info(
+                "Threat scoring engine shutting down"
+            )
         finally:
             flush_task.cancel()
             await asyncio.gather(flush_task, return_exceptions=True)
             # flush any remaining buckets on shutdown
             for key in list(self._buckets.keys()):
                 await self._flush_bucket(key)
-            log.info("ThreatScoringEngine stopped")
+            log.info(
+                "Threat scoring engine stopped"
+            )

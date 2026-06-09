@@ -63,7 +63,7 @@ class ThreatWeights:
     high_entropy: int = 15
     type_mutation: int = 25
     known_bad_extension: int = 40
-
+    ransom_note: int = 50
 
 @dataclass
 class ThreatThresholds:

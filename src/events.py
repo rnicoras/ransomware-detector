@@ -18,6 +18,7 @@ class SignalKind(Enum):
     HIGH_ENTROPY = auto()
     TYPE_MUTATION = auto()
     EXTENSION_RENAMED = auto()
+    RANSOM_NOTE = auto()
 
 
 class ResponseKind(Enum):
@@ -54,6 +55,7 @@ class ProcessEvent:
     timestamp: float = field(default_factory=time.time)
     parent_pid: Optional[int] = None
     cmdline: Optional[str] = None
+    read_write_ratio: Optional[float] = None
 
 
 @dataclass

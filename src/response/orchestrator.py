@@ -5,6 +5,11 @@ import shutil
 from pathlib import Path
 from typing import TYPE_CHECKING
 from src.events import ResponseAction, ResponseKind, ThreatAssessment
+from src.platform.process_control import (
+    suspend_process,
+    kill_process,
+    get_process_name,
+)
 
 if TYPE_CHECKING:
     from src.settings import AppConfig
@@ -43,41 +48,55 @@ class ResponseOrchestrator:
     async def _suspend(self, assessment: ThreatAssessment) -> None:
         pid = assessment.pid
         if pid is None:
-            log.debug("Suspend requested but no PID available")
+            log.debug(
+                "Suspend requested but no PID available"
+            )
             return
         if pid in self._suspended_pids:
-            log.debug("PID %d already suspended", pid)
+            log.debug(
+                "PID %d already suspended", pid
+            )
             return
         if not self._response.auto_suspend:
-            log.info("auto_suspend disabled — skipping suspend for pid=%d", pid)
+            log.info(
+                "auto_suspend disabled. Skipping suspend for pid=%d", pid
+            )
             return
 
         try:
-            import psutil
-            proc = psutil.Process(pid)
-            proc.suspend()
+            name = suspend_process(pid)
             self._suspended_pids.add(pid)
-            log.warning("SUSPENDED pid=%d name=%s", pid, proc.name())
+            log.warning(
+                "SUSPENDED pid=%d name=%s", pid, name
+            )
             await self._bus.publish(ResponseAction(
                 kind=ResponseKind.SUSPEND,
                 score=assessment.score,
                 path=assessment.path,
                 pid=pid,
-                detail=f"suspended process {proc.name()} (pid={pid})",
+                detail=f"Suspended process {name} (pid={pid})",
             ))
         except Exception as exc:
-            log.error("Failed to suspend pid=%d: %s", pid, exc)
+            log.error(
+                "Failed to suspend pid=%d: %s", pid, exc
+            )
 
     async def _quarantine(self, assessment: ThreatAssessment) -> None:
         path = assessment.path
         if path is None:
-            log.debug("Quarantine requested but no path available")
+            log.debug(
+                "Quarantine requested but no path available"
+            )
             return
         if path in self._quarantined_paths:
-            log.debug("Path already quarantined: %s", path)
+            log.debug(
+                "Path already quarantined: %s", path
+            )
             return
         if not self._response.auto_quarantine:
-            log.info("auto_quarantine disabled — skipping for %s", path)
+            log.info(
+                "auto_quarantine disabled. Skipping for %s", path
+            )
             return
 
         q_dir = self._response.quarantine_dir
@@ -92,16 +111,20 @@ class ResponseOrchestrator:
             loop = asyncio.get_running_loop()
             await loop.run_in_executor(None, shutil.move, str(path), str(dest))
             self._quarantined_paths.add(path)
-            log.warning("QUARANTINED %s → %s", path.name, dest)
+            log.warning(
+                "QUARANTINED %s -> %s", path.name, dest
+            )
             await self._bus.publish(ResponseAction(
                 kind=ResponseKind.QUARANTINE,
                 score=assessment.score,
                 path=path,
                 pid=assessment.pid,
-                detail=f"moved to quarantine: {dest}",
+                detail=f"Moved to quarantine: {dest}",
             ))
         except Exception as exc:
-            log.error("Failed to quarantine %s: %s", path, exc)
+            log.error(
+                "Failed to quarantine %s: %s", path, exc
+            )
 
     async def _kill(self, assessment: ThreatAssessment) -> None:
         pid = assessment.pid
@@ -111,19 +134,21 @@ class ResponseOrchestrator:
             return
 
         try:
-            import psutil
-            proc = psutil.Process(pid)
-            proc.kill()
-            log.warning("KILLED pid=%d", pid)
+            kill_process(pid)
+            log.warning(
+                "KILLED pid=%d", pid
+            )
             await self._bus.publish(ResponseAction(
                 kind=ResponseKind.KILL,
                 score=assessment.score,
                 path=assessment.path,
                 pid=pid,
-                detail=f"killed process pid={pid}",
+                detail=f"Killed process pid={pid}",
             ))
         except Exception as exc:
-            log.error("Failed to kill pid=%d: %s", pid, exc)
+            log.error(
+                "Failed to kill pid=%d: %s", pid, exc
+            )
 
 
     async def _respond(self, assessment: ThreatAssessment) -> None:
@@ -142,7 +167,7 @@ class ResponseOrchestrator:
 
     async def run(self) -> None:
         log.info(
-            "ResponseOrchestrator started "
+            "Response orchestrator started "
             "(alert>=%d, suspend>=%d, quarantine>=%d)",
             self._thresholds.alert,
             self._thresholds.suspend,
@@ -154,4 +179,6 @@ class ResponseOrchestrator:
             except asyncio.CancelledError:
                 raise
             except Exception:
-                log.exception("ResponseOrchestrator error processing assessment")
+                log.exception(
+                    "Response orchestrator error processing assessment"
+                )

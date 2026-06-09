@@ -9,49 +9,37 @@
 <body>
 
 <div class="header">
-    <div class="header-left">
-        <div class="shield">&#128737;</div>
-        <div>
-            <h1>Detector</h1>
-            <span>Threat monitoring dashboard</span>
-        </div>
-    </div>
-    <div class="status-badge">
-        <div class="dot" id="dot"></div>
-        <span id="statusText">Connecting...</span>
-    </div>
+    <h1>Ransomware Detector</h1>
+    <span class="sub">Threat monitoring dashboard</span>
 </div>
 
 <div class="container">
-    <div class="stats-grid">
-        <div class="card c-alert">
-            <div class="label">Total Alerts</div>
-            <div class="val" id="sAlerts">0</div>
+    <div class="stats">
+        <div class="stat">
+            <span class="stat-label">Alerts</span>
+            <span class="stat-val" id="sAlerts">0</span>
         </div>
-        <div class="card c-suspend">
-            <div class="label">Suspensions</div>
-            <div class="val" id="sSuspend">0</div>
+        <div class="stat">
+            <span class="stat-label">Suspensions</span>
+            <span class="stat-val" id="sSuspend">0</span>
         </div>
-        <div class="card c-quarantine">
-            <div class="label">Quarantines</div>
-            <div class="val" id="sQuarantine">0</div>
+        <div class="stat">
+            <span class="stat-label">Quarantines</span>
+            <span class="stat-val" id="sQuarantine">0</span>
         </div>
-        <div class="card c-uptime">
-            <div class="label">Uptime</div>
-            <div class="val" id="sUptime">00:00:00</div>
+        <div class="stat">
+            <span class="stat-label">Uptime</span>
+            <span class="stat-val" id="sUptime">00:00:00</span>
         </div>
     </div>
 
-    <div class="events-card">
-        <div class="events-top">
-            <h2>Live Event Feed</h2>
+    <div class="feed">
+        <div class="feed-top">
+            <span class="feed-title">Event Feed</span>
             <button class="btn-clear" onclick="clearAll()">Clear</button>
         </div>
         <div class="table-wrap" id="wrap">
-            <div class="empty" id="empty">
-                <div class="icon">&#128269;</div>
-                <p>Monitoring active. No threats detected yet.</p>
-            </div>
+            <div class="empty" id="empty">No threats detected.</div>
             <table id="tbl" style="display:none">
                 <thead>
                     <tr>

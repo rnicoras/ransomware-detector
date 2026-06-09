@@ -7,6 +7,7 @@ from src.analysis.burst import BurstDetector
 from src.analysis.entropy import EntropyAnalyser
 from src.analysis.typemutation import TypeMutationDetector
 from src.analysis.extension_rename import ExtensionRenameDetector
+from src.analysis.ransomnote import Ransomnote
 
 if TYPE_CHECKING:
     from src.settings import AppConfig
@@ -40,7 +41,7 @@ class AnalysisEngine:
                 log.exception("Honeyfile relay error")
 
     async def run(self) -> None:
-        log.info("AnalysisEngine starting")
+        log.info("Analysis engine starting")
 
         tasks = [
             asyncio.create_task(BurstDetector(self._cfg, self._bus).run(), name="burst"),
@@ -48,16 +49,17 @@ class AnalysisEngine:
             asyncio.create_task(TypeMutationDetector(self._cfg, self._bus).run(), name="typemutation"),
             asyncio.create_task(ExtensionRenameDetector(self._cfg, self._bus).run(), name="extension_rename"),
             asyncio.create_task(self._honeyfile_relay(), name="honeyfile_relay"),
+            asyncio.create_task(Ransomnote(self._cfg, self._bus).run(), name="ransomnote")
         ]
 
-        log.info("AnalysisEngine started (%d analyser tasks)", len(tasks))
+        log.info("Analysis engine started (%d analyser tasks)", len(tasks))
 
         try:
             await asyncio.gather(*tasks)
         except asyncio.CancelledError:
-            log.info("AnalysisEngine shutting down")
+            log.info("Analysis engine shutting down")
         finally:
             for task in tasks:
                 task.cancel()
             await asyncio.gather(*tasks, return_exceptions=True)
-            log.info("AnalysisEngine stopped")
+            log.info("Analysis engine stopped")

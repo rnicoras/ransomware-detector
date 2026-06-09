@@ -25,6 +25,7 @@ _ALREADY_COMPRESSED = {
     ".pdf",
 }
 
+_MIN_DELTA = 2.0
 
 def _shannon_entropy(data: bytes) -> float:
     if not data:
@@ -43,13 +44,12 @@ def _shannon_entropy(data: bytes) -> float:
 
 def _should_skip(path: Path, min_size: int) -> tuple[bool, str]:
     if not path.exists():
-        return True, "file no longer exists"
+        return True, "File no longer exists"
     if path.stat().st_size < min_size:
-        return True, f"too small ({path.stat().st_size} < {min_size} bytes)"
+        return True, f"Too small ({path.stat().st_size} < {min_size} bytes)"
     if path.suffix.lower() in _ALREADY_COMPRESSED:
-        return True, f"known compressed format ({path.suffix})"
+        return True, f"Known compressed format ({path.suffix})"
     return False, ""
-
 
 class EntropyAnalyser:
     def __init__(self, cfg: "AppConfig", bus: "EventBus") -> None:
@@ -57,29 +57,37 @@ class EntropyAnalyser:
         self._threshold = cfg.analysis.entropy.high_entropy_threshold
         self._min_size = cfg.analysis.entropy.min_file_size_bytes
         self._weight = cfg.threat_scoring.weights.high_entropy
+        self._entropy_history: dict[str, float] = {}
 
     async def _analyse(self, event: FileEvent) -> None:
         path = event.path
         skip, reason = _should_skip(path, self._min_size)
         if skip:
-            log.debug("EntropyAnalyser skipping %s: %s", path.name, reason)
+            log.debug("Entropy analyser skipping %s: %s", path.name, reason)
             return
 
         loop = asyncio.get_running_loop()
         try:
             data: bytes = await loop.run_in_executor(None, path.read_bytes)
         except OSError as exc:
-            log.debug("EntropyAnalyser could not read %s: %s", path.name, exc)
+            log.debug("Entropy analyser could not read %s: %s", path.name, exc)
             return
 
         entropy = _shannon_entropy(data)
-        log.debug("Entropy %.3f for %s", entropy, path.name)
+        path_key = str(path)
+        previous_entropy = self._entropy_history.get(path_key)
+        self._entropy_history[path_key] = entropy
+        log.debug(
+            "Entropy %.3f (previous: %.3f) for %s", entropy, previous_entropy or 0.0, path.name
+        )
+        exceeding_threshold = entropy >= self._threshold
+        suspicious_delta = (previous_entropy is not None and (entropy - previous_entropy) >= _MIN_DELTA and entropy >= self._threshold)
 
-        if entropy >= self._threshold:
+        if exceeding_threshold or suspicious_delta:
             log.warning(
-                "High entropy %.3f (threshold=%.1f) on %s",
+                "High entropy %.3f with delta =+ %s on %s",
                 entropy,
-                self._threshold,
+                entropy - previous_entropy if previous_entropy is not None else "",
                 path.name,
             )
             await self._bus.publish(ThreatSignal(
@@ -87,14 +95,12 @@ class EntropyAnalyser:
                 score_contribution=self._weight,
                 path=path,
                 pid=event.pid,
-                detail=f"entropy={entropy:.3f} threshold={self._threshold}",
+                detail=f"Entropy={entropy:.3f} Threshold={self._threshold}",
             ))
 
     async def run(self) -> None:
         log.info(
-            "EntropyAnalyser started (threshold=%.1f, min_size=%d bytes)",
-            self._threshold,
-            self._min_size,
+            "Entropy analyser started"
         )
         async for event in self._bus.subscribe(FileEvent):
             try:
@@ -103,4 +109,6 @@ class EntropyAnalyser:
             except asyncio.CancelledError:
                 raise
             except Exception:
-                log.exception("EntropyAnalyser error processing event")
+                log.exception(
+                    "Entropy analyser error processing event"
+                )

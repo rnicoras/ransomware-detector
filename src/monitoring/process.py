@@ -12,10 +12,13 @@ if TYPE_CHECKING:
 log = logging.getLogger(__name__)
 
 _POLL_INTERVAL = 2.0
-
-# write bytes/sec threshold to flag a process as high-I/O.
-
+# write bytes/sec threshold to flag a process as high i/o
 _WRITE_RATE_THRESHOLD = 10 * 1024 * 1024
+# minimum rate (bytes/sec) for r and w before considering the ratio meaningful to avoid false positives
+# for ex on idle processes that read and write 100 bytes each
+_MIN_RATE_FOR_RATIO = 1 * 1024 * 1024
+_RATIO_LOW = 0.5
+_RATIO_HIGH = 2.0
 
 
 class ProcessInspector:
@@ -23,6 +26,7 @@ class ProcessInspector:
         self._cfg = cfg
         self._bus = bus
         self._prev_write: dict[int, int] = {}
+        self._prev_read: dict[int, int] = {}
 
     def _sample(self) -> list[ProcessEvent]:
         events: list[ProcessEvent] = []
@@ -38,22 +42,49 @@ class ProcessInspector:
 
                 pid: int = info["pid"]
                 write_bytes: int = io.write_bytes
-                prev = self._prev_write.get(pid, write_bytes)
-                write_delta = write_bytes - prev
+                read_bytes: int = io.read_bytes
+                prev_write = self._prev_write.get(pid, write_bytes)
+                prev_read = self._prev_read.get(pid, read_bytes)
+                write_delta = write_bytes - prev_write
+                read_delta = read_bytes - prev_read
                 self._prev_write[pid] = write_bytes
-
+                self._prev_read[pid] = read_bytes
                 write_rate = write_delta / _POLL_INTERVAL
+                read_rate = read_delta / _POLL_INTERVAL
+                high_write = write_rate >= _WRITE_RATE_THRESHOLD
+                suspicious_ratio = False
+                ratio = None
 
-                if write_rate >= _WRITE_RATE_THRESHOLD:
-                    cmdline = info.get("cmdline") or []
-                    events.append(ProcessEvent(
-                        pid=pid,
-                        name=info.get("name") or "unknown",
-                        io_read_bytes=io.read_bytes,
-                        io_write_bytes=write_bytes,
-                        parent_pid=info.get("ppid"),
-                        cmdline=" ".join(cmdline) if cmdline else None,
-                    ))
+                if write_rate >= _MIN_RATE_FOR_RATIO and read_rate >= _MIN_RATE_FOR_RATIO:
+                    ratio = read_rate / write_rate
+                    if _RATIO_LOW <= ratio <= _RATIO_HIGH:
+                        suspicious_ratio = True
+
+                if not (high_write or suspicious_ratio):
+                    continue
+
+                cmdline = info.get("cmdline") or []
+                events.append(ProcessEvent(
+                    pid=pid,
+                    name=info.get("name") or "unknown",
+                    io_read_bytes=io.read_bytes,
+                    io_write_bytes=write_bytes,
+                    parent_pid=info.get("ppid"),
+                    cmdline=" ".join(cmdline) if cmdline else None,
+                    read_write_ratio=ratio,
+                ))
+
+                if suspicious_ratio:
+                    log.warning(
+                        "Suspicious I/O ratio: pid=%d name=%s "
+                        "ratio=%.2f read=%.1f MB/s write=%.1f MB/s",
+                        pid,
+                        info.get("name"),
+                        ratio,
+                        read_rate / 1024 / 1024,
+                        write_rate / 1024 / 1024,
+                    )
+                else:
                     log.debug(
                         "High write I/O: pid=%d name=%s rate=%.1f MB/s",
                         pid,
@@ -71,9 +102,12 @@ class ProcessInspector:
         dead = set(self._prev_write) - live_pids
         for pid in dead:
             del self._prev_write[pid]
+            self._prev_read.pop(pid, None)
 
     async def run(self) -> None:
-        log.info("ProcessInspector started (poll interval=%.1fs)", _POLL_INTERVAL)
+        log.info(
+            "Process inspector started (poll interval=%.1fs)", _POLL_INTERVAL
+        )
         cleanup_counter = 0
 
         try:
@@ -91,6 +125,10 @@ class ProcessInspector:
                     cleanup_counter = 0
 
         except asyncio.CancelledError:
-            log.info("ProcessInspector shutting down")
+            log.info(
+                "Process inspector shutting down"
+            )
         finally:
-            log.info("ProcessInspector stopped")
+            log.info(
+                "Process inspector stopped"
+            )

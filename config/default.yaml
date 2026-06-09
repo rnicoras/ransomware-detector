@@ -50,6 +50,7 @@ threat_scoring:
     high_entropy: 15
     type_mutation: 25
     known_bad_extension: 40
+    ransom_note: 50
   thresholds:
     alert: 30
     suspend: 55

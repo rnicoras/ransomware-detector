@@ -39,8 +39,11 @@ async def _main(args: argparse.Namespace) -> None:
     from src.response.orchestrator import ResponseOrchestrator
     from src.backup.orchestrator import Backup
     from src.dashboard.server import Dashboard
+    from src.platform.pidresolver import PIDResolver
 
-    tasks.append(asyncio.create_task(FileSystemWatcher(cfg, bus).run(), name = "fs_watcher"))
+    resolver = PIDResolver()
+    tasks.append(asyncio.create_task(resolver.run(), name="pidresolver"))
+    tasks.append(asyncio.create_task(FileSystemWatcher(cfg, bus, resolver).run(), name = "fs_watcher"))
     tasks.append(asyncio.create_task(HoneyfileSentinel(cfg, bus).run(), name = "honeyfile"))
     tasks.append(asyncio.create_task(ProcessInspector(cfg, bus).run(), name = "proc_inspector"))
     tasks.append(asyncio.create_task(AnalysisEngine(cfg, bus).run(), name = "analysis"))
@@ -52,7 +55,9 @@ async def _main(args: argparse.Namespace) -> None:
     stop = asyncio.Event()
 
     def _signal_handler(*_) -> None:
-        log.info("Shutdown signal received")
+        log.info(
+            "Shutdown signal received"
+        )
         stop.set()
 
     loop = asyncio.get_running_loop()
@@ -62,7 +67,9 @@ async def _main(args: argparse.Namespace) -> None:
         except NotImplementedError:
             signal.signal(sig, _signal_handler)
 
-    log.info("Detector running")
+    log.info(
+        "Detector running"
+    )
     await stop.wait()
 
     for task in tasks:
@@ -70,7 +77,9 @@ async def _main(args: argparse.Namespace) -> None:
     if tasks:
         await asyncio.gather(*tasks, return_exceptions=True)
 
-    log.info("Shutdown complete. Bus stats: %s", bus.stats)
+    log.info(
+        "Shutdown complete. Bus stats: %s", bus.stats
+    )
 
 
 def main() -> None:

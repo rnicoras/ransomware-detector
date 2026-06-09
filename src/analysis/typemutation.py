@@ -76,7 +76,9 @@ class TypeMutationDetector:
         mutated, detail = await loop.run_in_executor(None, _is_mutated, path)
 
         if mutated:
-            log.warning("Type mutation detected: %s", detail)
+            log.warning(
+                "Type mutation detected: %s", detail
+            )
             await self._bus.publish(ThreatSignal(
                 kind=SignalKind.TYPE_MUTATION,
                 score_contribution=self._weight,
@@ -87,10 +89,14 @@ class TypeMutationDetector:
 
     async def run(self) -> None:
         if not self._enabled:
-            log.info("TypeMutationDetector disabled — skipping")
+            log.info(
+                "Type mutation detector disabled"
+            )
             return
 
-        log.info("TypeMutationDetector started")
+        log.info(
+            "Type mutation detector started"
+        )
         async for event in self._bus.subscribe(FileEvent):
             try:
                 if event.op in (FileOp.CREATED, FileOp.MODIFIED):
@@ -98,4 +104,6 @@ class TypeMutationDetector:
             except asyncio.CancelledError:
                 raise
             except Exception:
-                log.exception("TypeMutationDetector error processing event")
+                log.exception(
+                    "Type mutation detector error processing event"
+                )
