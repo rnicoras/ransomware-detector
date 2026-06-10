@@ -3,6 +3,7 @@ import asyncio
 import logging
 import time
 import json
+from collections import deque
 from typing import TYPE_CHECKING, Set
 import uvicorn
 from fastapi.staticfiles import StaticFiles
@@ -31,6 +32,7 @@ class Dashboard:
         }
         self._client: Set[WebSocket] = set()
         self._app = FastAPI()
+        self._recent_events: deque = deque(maxlen=100)
         self._setup_routes()
 
     def _setup_routes(self):
@@ -60,6 +62,8 @@ class Dashboard:
                     "type": "stats",
                     "data": self._current_stats(),
                 }))
+                for event in self._recent_events:
+                    await ws.send_text(json.dumps(event))
                 while True:
                     await ws.receive_text()
             except WebSocketDisconnect:
@@ -80,6 +84,7 @@ class Dashboard:
         }
 
     async def _broadcast(self, message: dict):
+        self._recent_events.append(message)
         if not self._client:
             return
         text = json.dumps(message)

@@ -19,6 +19,7 @@ class SignalKind(Enum):
     TYPE_MUTATION = auto()
     EXTENSION_RENAMED = auto()
     RANSOM_NOTE = auto()
+    ML_PREDICTION = auto()
 
 
 class ResponseKind(Enum):

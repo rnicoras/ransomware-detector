@@ -32,16 +32,44 @@ analysis:
     check_magic_bytes: true
   extension_rename:
     enabled: true
-    known_bad_extensions:
+    known_bad_extensions: # modern ransomware use random extensions anyway, that's where the behavioural part comes into play
       - ".locked"
       - ".encrypted"
       - ".enc"
       - ".crypted"
       - ".crypt"
       - ".cry"
-      - ".rnsmwr"
       - ".wncry"
+      - ".wncryt"
       - ".wannacry"
+      - ".locky"
+      - ".zepto"
+      - ".odin"
+      - ".thor"
+      - ".osiris"
+      - ".cerber"
+      - ".cerber2"
+      - ".cerber3"
+      - ".lockbit"
+      - ".ryk"
+      - ".dharma"
+      - ".wallet"
+      - ".phobos"
+      - ".acute"
+      - ".conti"
+      - ".hive"
+      - ".basta"
+      - ".clop"
+      - ".cl0p"
+      - ".medusa"
+      - ".gdcb"
+      - ".crab"
+      - ".krab"
+      - ".shade"
+      - ".rnsmwr"
+      - ".ransom"
+      - ".pays"
+      - ".damage"
 
 threat_scoring:
   weights:
@@ -51,13 +79,14 @@ threat_scoring:
     type_mutation: 25
     known_bad_extension: 40
     ransom_note: 50
+    ml_prediction: 35
   thresholds:
     alert: 30
     suspend: 55
     quarantine: 75
 
 response:
-  auto_suspend: true
+  auto_suspend: false
   auto_quarantine: true
   quarantine_dir: "~/.ransomware-detector/quarantine"
   auto_kill: false

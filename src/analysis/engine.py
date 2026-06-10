@@ -8,6 +8,7 @@ from src.analysis.entropy import EntropyAnalyser
 from src.analysis.typemutation import TypeMutationDetector
 from src.analysis.extension_rename import ExtensionRenameDetector
 from src.analysis.ransomnote import Ransomnote
+from src.analysis.ml_scorer import MLScorer
 
 if TYPE_CHECKING:
     from src.settings import AppConfig
@@ -49,7 +50,8 @@ class AnalysisEngine:
             asyncio.create_task(TypeMutationDetector(self._cfg, self._bus).run(), name="typemutation"),
             asyncio.create_task(ExtensionRenameDetector(self._cfg, self._bus).run(), name="extension_rename"),
             asyncio.create_task(self._honeyfile_relay(), name="honeyfile_relay"),
-            asyncio.create_task(Ransomnote(self._cfg, self._bus).run(), name="ransomnote")
+            asyncio.create_task(Ransomnote(self._cfg, self._bus).run(), name="ransomnote"),
+            asyncio.create_task(MLScorer(self._cfg, self._bus).run(), name="ml_scorer"),
         ]
 
         log.info("Analysis engine started (%d analyser tasks)", len(tasks))

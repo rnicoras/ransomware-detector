@@ -64,6 +64,7 @@ class ThreatWeights:
     type_mutation: int = 25
     known_bad_extension: int = 40
     ransom_note: int = 50
+    ml_prediction: int = 35
 
 @dataclass
 class ThreatThresholds:
