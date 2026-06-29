@@ -33,6 +33,15 @@ function tickUptime() {
     document.getElementById('sUptime').textContent = h + ':' + m + ':' + sc;
 }
 
+function parseSignalsFromDetail(detail) {
+    if (!detail) return [];
+    var match = detail.match(/signals=\[([^\]]*)\]/);
+    if (match && match[1]) {
+        return match[1].split(',').map(function(s) { return s.trim(); }).filter(Boolean);
+    }
+    return [];
+}
+
 function addRow(msg) {
     document.getElementById('empty').style.display = 'none';
     var tbl = document.getElementById('tbl');
@@ -58,23 +67,23 @@ function addRow(msg) {
     else if (score >= 55) scoreClass = 'score-mid';
     else scoreClass = 'score-low';
 
-    var fname = d.path
-        ? d.path.replace(/\\\\/g, '/').split('/').pop()
+    var fullPath = d.path
+        ? d.path.replace(/\\\\/g, '/')
         : 'N/A';
 
-    var sigs = (d.signals || [])
+    var signalList = d.signals || parseSignalsFromDetail(d.detail);
+
+    var sigs = signalList
         .map(function(s) { return '<span class="sig">' + s.replace(/_/g, ' ') + '</span>'; })
-        .join('') || (d.detail
-            ? '<span class="sig">' + d.detail.substring(0, 40) + '</span>'
-            : '');
+        .join('');
 
     var tr = document.createElement('tr');
     tr.innerHTML =
         '<td>' + t + '</td>' +
         '<td><span class="level ' + levelClass + '">' + levelText + '</span></td>' +
         '<td><span class="score ' + scoreClass + '">' + score + '</span></td>' +
-        '<td class="path-cell" title="' + (d.path || '') + '">' + fname + '</td>' +
-        '<td>' + sigs + '</td>' +
+        '<td class="path-cell">' + fullPath + '</td>' +
+        '<td class="signals-cell">' + sigs + '</td>' +
         '<td>' + (d.pid || 'N/A') + '</td>';
 
     var tbody = document.getElementById('tbody');

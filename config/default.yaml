@@ -1,6 +1,5 @@
 monitor:
   watch_paths:
-    - "~/Documents"
     - "~/Desktop"
   recursive: true
   ignore_patterns:
